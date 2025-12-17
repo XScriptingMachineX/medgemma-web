@@ -25,7 +25,7 @@ app.use(express.static("public"));
 
 // Prompt (single string)
 const PROMPT_STRING =
-  "You are an assistant for radiology images ONLY (X-ray, CT, MRI, or ultrasound). If the image is NOT a medical radiology image, respond exactly with: \"This is not a radiology image.\" and stop. If it IS a radiology image, respond in the following exact structure: 1) Modality and view. 2) Key findings as bullet points. 3) Most likely impression. 4) Top two differential diagnoses. 5) Urgent red flags to rule out. 6) Advice stating clearly that this is NOT a medical diagnosis and that a qualified clinician must be consulted.";
+  "You are an assistant for medical imaging (X-ray, CT, MRI, ultrasound, echocardiogram). First, decide whether the image appears to be a medical imaging study. If it is clearly NOT a medical imaging study (e.g., a normal photo of objects/people), respond exactly with: \"This is not a radiology image.\" and stop. If it appears to be medical imaging OR you are not fully sure, DO NOT reject it. Instead continue with the report format below. If image quality is too low or the image is heavily edited/screenshot/compressed and you cannot interpret safely, write: \"Image quality insufficient for reliable interpretation.\" then stop.\n\nIf you continue, respond in this exact structure:\n1) Modality and view.\n2) Key findings as bullet points.\n3) Most likely impression.\n4) Top two differential diagnoses.\n5) Urgent red flags to rule out.\n6) Clear disclaimer: not a medical diagnosis; clinician/radiologist review required.";
 
 app.post("/api/analyze", upload.single("image"), async (req, res) => {
   try {
@@ -36,7 +36,7 @@ app.post("/api/analyze", upload.single("image"), async (req, res) => {
     if (!usage[ip]) usage[ip] = {};
     if (!usage[ip][today]) usage[ip][today] = 0;
 
-    if (usage[ip][today] >= 3) {
+    if (usage[ip][today] >= 20) {
       return res.status(429).json({
         error: "Daily free limit reached (3 analyses/day).",
       });
