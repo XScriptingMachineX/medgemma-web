@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Radiology AI Test</title>
+</head>
+<body>
+  <h1>Radiology Upload (Vision Model)</h1>
+
+  <input type="file" id="imageInput" accept="image/*" />
+  <button onclick="submitImage()">Submit</button>
+
+  <pre
+    id="output"
+    style="white-space: pre-wrap; border: 1px solid #ccc; padding: 10px; margin-top: 15px;"
+  ></pre>
+
+  <button
+    id="downloadBtn"
+    onclick="downloadReport()"
+    disabled
+    style="margin-top: 10px;"
+  >
+    Download report (.txt)
+  </button>
+
+  <script>
+    let lastReportText = "";
+
+    async function submitImage() {
+      const input = document.getElementById("imageInput");
+      const output = document.getElementById("output");
+      const downloadBtn = document.getElementById("downloadBtn");
+
+      if (!input.files || input.files.length === 0) {
+        output.textContent = "Pick an image first.";
+        return;
+      }
+
+      output.textContent = "Uploading & analyzing...";
+      downloadBtn.disabled = true;
+      lastReportText = "";
+
+      const formData = new FormData();
+      formData.append("image", input.files[0]);
+
+      try {
+        const resp = await fetch("/api/analyze", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await resp.json();
+        const text = data?.choices?.[0]?.message?.content;
+
+        if (text) {
+          lastReportText = text;
+          output.textContent = text;
+          downloadBtn.disabled = false;
+        } else {
+          output.textContent =
+            "Unexpected response:\n" + JSON.stringify(data, null, 2);
+        }
+      } catch (err) {
+        output.textContent = "Error communicating with server.";
+      }
+    }
+
+    function downloadReport() {
+      if (!lastReportText) return;
+
+      const blob = new Blob([lastReportText], {
+        type: "text/plain;charset=utf-8"
+      });
+      const url = URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "medgemma-report.txt";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>
